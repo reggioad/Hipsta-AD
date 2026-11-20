@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mon Hipsta V6</title>
+<style>
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:'Helvetica Neue',Arial,sans-serif; background:#0b0b0c; color:#d8d8d8; text-align:center; min-height:100vh; padding:10px 0 30px; }
+  .body { max-width:540px; margin:0 auto; padding:0 0 18px; border-radius:22px; overflow:hidden; background-color:#1a1a1b; background-image:radial-gradient(rgba(255,255,255,.045) 1px, transparent 1.4px), radial-gradient(rgba(0,0,0,.5) 1px, transparent 1.4px); background-size:5px 5px, 5px 5px; background-position:0 0, 2px 2px; box-shadow:0 0 0 2px #333, 0 0 0 5px #0e0e0f, 0 18px 40px rgba(0,0,0,.8); }
+  .top { background:linear-gradient(#f4f4f4 0%, #b9b9bb 38%, #8d8d90 52%, #cfcfd2 100%); padding:10px 14px; display:flex; align-items:center; justify-content:space-between; border-bottom:3px solid #2a2a2b; box-shadow:inset 0 1px 0 #fff, 0 3px 8px rgba(0,0,0,.6); }
+  .brand { font-size:19px; font-weight:900; letter-spacing:5px; color:#1a1a1a; text-shadow:0 1px 0 rgba(255,255,255,.7); }
+  .led { width:11px; height:11px; border-radius:50%; background:#d62020; box-shadow:0 0 8px #ff3a3a, inset 0 -2px 3px rgba(0,0,0,.4); }
+  .model { font-size:10px; letter-spacing:3px; color:#444; font-weight:700; }
+  .vf { margin:16px 14px 6px; padding:14px; background:#050505; border-radius:10px; border:3px solid #2b2b2c; box-shadow:inset 0 0 22px #000, 0 1px 0 rgba(255,255,255,.1); position:relative; }
+  .stage { display:block; max-width:100%; position:relative; }
+  canvas { display:block; max-width:100%; max-height:50vh; background:#111; margin:0 auto; }
+  .empty { color:#666; padding:70px 20px; font-size:13px; letter-spacing:2px; text-transform:uppercase; }
+  .vf::before, .vf::after { content:''; position:absolute; width:16px; height:16px; border:2px solid rgba(255,255,255,.55); pointer-events:none; }
+  .vf::before { top:20px; left:20px; border-right:0; border-bottom:0; }
+  .vf::after { bottom:20px; right:20px; border-left:0; border-top:0; }
+  .panel { margin:14px 0 0; padding:0 14px; }
+  .wheel { display:flex; align-items:center; justify-content:center; background:#0f0f10; border:1px solid #2d2d2f; border-radius:10px; margin:4px 0; padding:2px 6px; box-shadow:inset 0 3px 8px #000, 0 1px 0 rgba(255,255,255,.08); }
+  .wheel .lab { width:86px; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:#9a9a9c; font-weight:700; }
+  .wheel .val { flex:1; font-size:13px; min-height:0; color:#f2f2f2; font-family:'Courier New',monospace; letter-spacing:1px; }
+  .wheel button { width:30px; height:30px; font-size:15px; line-height:1; padding:0; color:#1a1a1a; border:0; border-radius:50%; background:conic-gradient(from 0deg, #e8e8ea, #8e8e92, #e8e8ea, #8e8e92, #e8e8ea); box-shadow:0 1px 3px rgba(0,0,0,.7), inset 0 0 0 2px rgba(0,0,0,.25); font-weight:900; }
+  .wheel button:active { transform:translateY(1px); filter:brightness(.85); }
+  .row { margin:12px 0; }
+  .big { font-size:13px; padding:13px 16px; margin:4px; border-radius:10px; border:0; background:linear-gradient(#e6e6e8,#9d9da1); color:#151515; font-weight:800; letter-spacing:1px; text-transform:uppercase; font-family:inherit; box-shadow:0 2px 4px rgba(0,0,0,.7), inset 0 1px 0 #fff; display:inline-block; }
+  .ghost { background:linear-gradient(#3a3a3c,#232325); color:#e2e2e4; box-shadow:0 2px 4px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.18); }
+  #save { background:linear-gradient(#ff4a3a,#b01c12); color:#fff; box-shadow:0 2px 6px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.35); }
+  input[type=file] { display:none; }
+  .opts label { font-size:12px; margin:0 8px; color:#b4b4b6; }
+  select { background:#0f0f10; color:#e8e8e8; border:1px solid #3a3a3c; border-radius:6px; padding:5px; }
+</style>
+</head>
+<body>
+<div class="body">
+<div class="top"><div class="brand">HIPSTA</div><div class="model">V6 · ANALOG DIGITAL</div><div class="led"></div></div>
+<div class="vf">
+<div class="stage" id="stage">
+  <div class="empty" id="empty">Choisis une photo</div>
+  <canvas id="c" style="display:none"></canvas>
+</div>
+</div>
+<div class="panel">
+  <div class="wheel"><div class="lab">Objectif</div><button data-w="lens" data-d="-1">‹</button><div class="val" id="lensVal"></div><button data-w="lens" data-d="1">›</button></div>
+  <div class="wheel"><div class="lab">Pellicule</div><button data-w="film" data-d="-1">‹</button><div class="val" id="filmVal"></div><button data-w="film" data-d="1">›</button></div>
+  <div class="wheel"><div class="lab">Flash</div><button data-w="flash" data-d="-1">‹</button><div class="val" id="flashVal"></div><button data-w="flash" data-d="1">›</button></div>
+  <div class="wheel"><div class="lab">Format</div><button data-w="fmt" data-d="-1">‹</button><div class="val" id="fmtVal"></div><button data-w="fmt" data-d="1">›</button></div>
+  <div class="opts row">
+    <label>Mode <select id="mode"><option value="crop">Recadrer</option><option value="fit-dark">Bandes noires</option><option value="fit-cream">Bandes crème</option></select></label>
+  </div>
+  <div class="opts row" id="shiftRow">
+    <label>Cadrage <input type="range" id="shift" min="0" max="100" value="50" style="width:180px"></label>
+  </div>
+  <div class="opts row">
+    <label><input type="checkbox" id="dust" checked> Poussières</label>
+    <label><input type="checkbox" id="scratch"> Rayures</label>
+  </div>
+  <div class="row">
+    <label class="big ghost" for="file">📷 Photo</label><input type="file" id="file" accept="image/*">
+    <button class="big ghost" id="rand">🎲 Surprise</button>
+    <button class="big" id="save">Enregistrer</button>
+  </div>
+</div>
+</div>
+<script>
+// ---------- Objectifs : vignettage et douceur ----------
+const lenses = {
+  'Standard': {vignette:0.15, blur:0},
+  'Vintage': {vignette:0.45, blur:0.6},
+  'Grand angle': {vignette:0.3, blur:0},
+  'Tunnel': {vignette:0.7, blur:0.4},
+  'Net': {vignette:0, blur:0},
+  'Zeiss Sonnar 38 mm f/2.8': {vignette:0.35, blur:0.2},
+  'Summilux 35 mm f/1.4': {vignette:0.25, blur:0.5},
+  'GF 45 mm f/2.8': {vignette:0.1, blur:0},
+  'Canon RF 35 mm f/1.8': {vignette:0.12, blur:0}
+};
+
+// ---------- Pellicules : courbes de tons par canal ----------
+// Chaque canal (R, V, B) est une courbe définie par des points [entrée, sortie] de 0 à 255.
+// sat = saturation globale, mono = noir et blanc.
+// Inspirations seulement, ce ne sont pas des profils officiels.
+const films = {
+  'Nikon Z6 III': {r:[[0,0],[64,62],[192,196],[255,255]], g:[[0,0],[64,64],[192,194],[255,255]], b:[[0,2],[64,66],[192,190],[255,252]], sat:1.05},
+  'Fujifilm GFX 50R': {r:[[0,4],[64,66],[192,198],[255,252]], g:[[0,3],[64,66],[192,196],[255,252]], b:[[0,6],[64,68],[192,188],[255,248]], sat:1.15},
+  'Sony A9 III': {r:[[0,0],[64,58],[192,202],[255,255]], g:[[0,0],[64,58],[192,202],[255,255]], b:[[0,0],[64,60],[192,200],[255,255]], sat:1.1},
+  'Nikon D850': {r:[[0,0],[64,60],[192,198],[255,255]], g:[[0,0],[64,61],[192,197],[255,255]], b:[[0,0],[64,62],[192,196],[255,254]], sat:1.0},
+  'Leica M11': {r:[[0,6],[64,60],[192,204],[255,250]], g:[[0,5],[64,60],[192,200],[255,248]], b:[[0,8],[64,60],[192,190],[255,240]], sat:0.88},
+  'Fujifilm GFX 100 II': {r:[[0,2],[64,66],[192,198],[255,254]], g:[[0,2],[64,66],[192,197],[255,254]], b:[[0,3],[64,67],[192,194],[255,252]], sat:1.12},
+  'Sony A7C II': {r:[[0,0],[64,63],[192,200],[255,255]], g:[[0,0],[64,64],[192,199],[255,255]], b:[[0,2],[64,66],[192,194],[255,252]], sat:1.1},
+  'Canon EOS R6 Mark II': {r:[[0,0],[64,64],[192,200],[255,255]], g:[[0,0],[64,64],[192,197],[255,254]], b:[[0,2],[64,64],[192,192],[255,250]], sat:1.08},
+  'Contax T2': {r:[[0,6],[64,58],[192,208],[255,252]], g:[[0,4],[64,58],[192,200],[255,248]], b:[[0,10],[64,60],[192,184],[255,236]], sat:1.2},
+  'Kodak Portra 400': {r:[[0,12],[64,72],[192,206],[255,250]], g:[[0,10],[64,70],[192,198],[255,248]], b:[[0,14],[64,70],[192,186],[255,238]], sat:0.95},
+  'Kodak Gold 200': {r:[[0,8],[64,70],[192,214],[255,255]], g:[[0,6],[64,64],[192,200],[255,248]], b:[[0,4],[64,52],[192,170],[255,220]], sat:1.2},
+  'Kodak Ektar 100': {r:[[0,0],[64,56],[192,210],[255,255]], g:[[0,0],[64,60],[192,200],[255,254]], b:[[0,0],[64,64],[192,200],[255,255]], sat:1.45},
+  'Fujifilm Velvia 50': {r:[[0,0],[64,50],[192,214],[255,255]], g:[[0,0],[64,56],[192,206],[255,255]], b:[[0,2],[64,62],[192,204],[255,255]], sat:1.65},
+  'Fujifilm Superia 400': {r:[[0,4],[64,62],[192,200],[255,250]], g:[[0,8],[64,70],[192,204],[255,252]], b:[[0,6],[64,64],[192,192],[255,244]], sat:1.12},
+  'CineStill 800T': {r:[[0,4],[64,56],[192,200],[255,248]], g:[[0,8],[64,66],[192,196],[255,246]], b:[[0,18],[64,82],[192,210],[255,255]], sat:0.95},
+  'Kodak Tri-X 400': {r:[[0,0],[64,50],[192,212],[255,255]], g:[[0,0],[64,50],[192,212],[255,255]], b:[[0,0],[64,50],[192,212],[255,255]], sat:1, mono:true},
+  'Ilford HP5 Plus': {r:[[0,4],[64,62],[192,200],[255,250]], g:[[0,4],[64,62],[192,200],[255,250]], b:[[0,4],[64,62],[192,200],[255,250]], sat:1, mono:true}
+};
+
+// ---------- Flashs et effets ----------
+const flashes = {
+  'Aucun': {color:null, alpha:0},
+  'Lueur chaude': {color:'255,170,60', alpha:0.25},
+  'Lueur rose': {color:'255,90,150', alpha:0.2},
+  'Lueur bleue': {color:'80,140,255', alpha:0.2},
+  'Grain': {color:'grain', alpha:0.05},
+  'Fuite de lumière': {color:'leak', alpha:0.35}
+};
+
+// ---------- Formats Instagram (export à 1080 px de large) ----------
+const formats = {
+  'Original': null,
+  'Carré 1:1': [1080,1080],
+  'Portrait 4:5': [1080,1350],
+  'Story / Reel 9:16': [1080,1920]
+};
+const sets = {lens:lenses, film:films, flash:flashes, fmt:formats};
+const idx = {lens:1, film:8, flash:0, fmt:2};
+function names(k){ return Object.keys(sets[k]); }
+function label(){ for (const k of ['lens','film','flash','fmt']) document.getElementById(k+'Val').textContent = names(k)[idx[k]]; }
+
+const canvas=document.getElementById('c'), ctx=canvas.getContext('2d');
+let img=null;
+let seed=1; function rnd(){ seed=(seed*16807)%2147483647; return (seed-1)/2147483646; }
+
+// Transforme une courbe en table de 256 valeurs par interpolation linéaire
+function buildLUT(points){
+  const lut=new Uint8ClampedArray(256);
+  for(let x=0;x<256;x++){
+    let i=0; while(i<points.length-2 && x>points[i+1][0]) i++;
+    const p0=points[i], p1=points[i+1];
+    const t=(x-p0[0])/Math.max(1,(p1[0]-p0[0]));
+    lut[x]=p0[1]+(p1[1]-p0[1])*Math.min(1,Math.max(0,t));
+  }
+  return lut;
+}
+
+// Applique la courbe de la pellicule pixel par pixel
+function applyFilm(w,h,film){
+  const d=ctx.getImageData(0,0,w,h), p=d.data;
+  const R=buildLUT(film.r), G=buildLUT(film.g), B=buildLUT(film.b);
+  const sat=film.sat||1;
+  for(let i=0;i<p.length;i+=4){
+    let r=p[i], g=p[i+1], b=p[i+2];
+    const lum=0.299*r+0.587*g+0.114*b;
+    if(film.mono){ r=g=b=lum; }
+    else if(sat!==1){ r=lum+(r-lum)*sat; g=lum+(g-lum)*sat; b=lum+(b-lum)*sat; }
+    r=Math.min(255,Math.max(0,r)); g=Math.min(255,Math.max(0,g)); b=Math.min(255,Math.max(0,b));
+    p[i]=R[r|0]; p[i+1]=G[g|0]; p[i+2]=B[b|0];
+  }
+  ctx.putImageData(d,0,0);
+}
+
+function draw(){
+  label();
+  if(!img) return;
+  const fmt=formats[names('fmt')[idx.fmt]];
+  const mode=document.getElementById('mode').value;
+  const shift=document.getElementById('shift').value/100;
+  let w,h;
+  if(fmt){ w=fmt[0]; h=fmt[1]; }
+  else { const s0=Math.min(1,1600/Math.max(img.width,img.height)); w=Math.round(img.width*s0); h=Math.round(img.height*s0); }
+  canvas.width=w; canvas.height=h;
+  document.getElementById('shiftRow').style.display=(fmt&&mode==='crop')?'block':'none';
+  document.getElementById('mode').disabled=!fmt;
+  const L=lenses[names('lens')[idx.lens]];
+  if(mode==='fit-cream'&&fmt){ ctx.fillStyle='#f3ead8'; ctx.fillRect(0,0,w,h); }
+  else { ctx.fillStyle='#000'; ctx.fillRect(0,0,w,h); }
+  ctx.filter=L.blur?('blur('+L.blur+'px)'):'none';
+  if(!fmt){ ctx.drawImage(img,0,0,w,h); }
+  else if(mode==='crop'){
+    const sc=Math.max(w/img.width,h/img.height);
+    const dw=img.width*sc, dh=img.height*sc;
+    ctx.drawImage(img,-(dw-w)*shift,-(dh-h)*shift,dw,dh);
+  } else {
+    const sc=Math.min(w/img.width,h/img.height);
+    const dw=img.width*sc, dh=img.height*sc;
+    ctx.drawImage(img,(w-dw)/2,(h-dh)/2,dw,dh);
+  }
+  ctx.filter='none';
+  applyFilm(w,h,films[names('film')[idx.film]]);
+  if(L.vignette>0){
+    const g=ctx.createRadialGradient(w/2,h/2,Math.min(w,h)*0.3,w/2,h/2,Math.max(w,h)*0.75);
+    g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,'+L.vignette+')');
+    ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+  }
+  const F=flashes[names('flash')[idx.flash]];
+  if(F.color==='grain'){
+    const d=ctx.getImageData(0,0,w,h), p=d.data;
+    seed=7;
+    for(let i=0;i<p.length;i+=4){ const n=(rnd()-0.5)*255*F.alpha*2; p[i]+=n; p[i+1]+=n; p[i+2]+=n; }
+    ctx.putImageData(d,0,0);
+  } else if(F.color==='leak'){
+    const g=ctx.createLinearGradient(0,0,w*0.5,h*0.4);
+    g.addColorStop(0,'rgba(255,120,40,'+F.alpha+')'); g.addColorStop(1,'rgba(255,120,40,0)');
+    ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+  } else if(F.color){
+    const g=ctx.createRadialGradient(w/2,h/2,0,w/2,h/2,Math.max(w,h)*0.7);
+    g.addColorStop(0,'rgba('+F.color+','+F.alpha+')'); g.addColorStop(1,'rgba('+F.color+',0)');
+    ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+  }
+  if(document.getElementById('dust').checked){
+    seed=42; const n=Math.round(w*h/20000);
+    for(let i=0;i<n;i++){
+      const x=rnd()*w, y=rnd()*h, r=rnd()*2.2+0.4;
+      ctx.fillStyle='rgba(255,250,235,'+(0.25+rnd()*0.5)+')';
+      ctx.beginPath(); ctx.arc(x,y,r,0,6.2832); ctx.fill();
+    }
+  }
+  if(document.getElementById('scratch').checked){
+    seed=99; ctx.lineWidth=Math.max(1,w/900);
+    for(let i=0;i<6;i++){
+      const x=rnd()*w; ctx.strokeStyle='rgba(255,255,255,'+(0.15+rnd()*0.25)+')';
+      ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x+(rnd()-0.5)*20,h); ctx.stroke();
+    }
+  }
+}
+
+document.querySelectorAll('.wheel button').forEach(b=>b.addEventListener('click',()=>{
+  const k=b.dataset.w, n=names(k).length;
+  idx[k]=(idx[k]+parseInt(b.dataset.d)+n)%n; draw();
+}));
+['dust','scratch','mode','shift'].forEach(id=>document.getElementById(id).addEventListener('input',draw));
+document.getElementById('rand').addEventListener('click',()=>{
+  for(const k of ['lens','film','flash']) idx[k]=Math.floor(Math.random()*names(k).length);
+  draw();
+});
+document.getElementById('file').addEventListener('change', e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const i=new Image();
+  i.onload=()=>{ img=i; document.getElementById('empty').style.display='none'; canvas.style.display='block'; draw(); };
+  i.src=URL.createObjectURL(f);
+});
+document.getElementById('save').addEventListener('click',()=>{
+  if(!img) return;
+  const a=document.createElement('a'); a.download='hipsta.jpg'; a.href=canvas.toDataURL('image/jpeg',0.92); a.click();
+});
+label();
+</script>
+</body>
+</html>
